@@ -51,10 +51,7 @@ class CommandRunner(object):
         command.call(args)
 
 
-def main():
+if __name__ == "__main__":
     enable_pretty_logging()
     command_runner = CommandRunner(commands)
     command_runner.run()
-
-if __name__ == "__main__":
-    main()

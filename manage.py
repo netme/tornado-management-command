@@ -36,7 +36,7 @@ class CommandRunner(object):
                 description = module.Command.description
                 arguments = module.Command.arguments
             except AttributeError as e:
-                logging.error(e.message)
+                logging.debug(e.message)
                 continue
 
             parsers[command] = subparsers.add_parser(command, help=description)

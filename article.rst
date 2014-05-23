@@ -27,13 +27,13 @@ file or via command line arguments.
         ...
 
 This approach is nice, but when the number of command-line utilities grows,
-the user should either create a separate script runner for every command, or 
-should deal with the long list of parameters used by different commands. 
+the user should either create a separate script runner for every command, or
+should deal with the long list of parameters used by different commands.
 
-To overcome this issues we have decided to create our own management command 
-runner. The original idea of code structure was taken from Django framework, 
-there management commands are implemented nice way. We have decided to stick to 
-the following module structure:
+To overcome this issues we have decided to create our own management command
+runner. The original idea of code structure was taken from the Django
+framework, their management commands are implemented nice way. We have decided
+to stick to the following module structure:
 
 ::
     
@@ -45,7 +45,7 @@ the following module structure:
     scripts.py
 
 
-Each command is stored inside `commands` module. `commands` module also 
+Each command is stored inside the `commands` module. The `commands` module also
 contains the base class for each command - `BaseCommand`:
 
 ::
@@ -61,10 +61,10 @@ contains the base class for each command - `BaseCommand`:
             pass
 
 
-Each command should be inherited from `BaseCommand` class and override at least
-`call` method. To help the user understand what command is doing, it should be
-a good practice to fill the `description` attribute with some general 
-information. Let's look on the code of `hello_world` command:
+Each command should be inherited from the class `BaseCommand` and override at
+least the `call` method. To help the user understand what the command is doing,
+it should be a good practice to fill the `description` attribute with some
+general information. Let's look on the code of a `hello_world` command:
 
 ::
     
@@ -81,9 +81,9 @@ information. Let's look on the code of `hello_world` command:
             print("Hello world!")
 
 
-As long, as Python 2.7+ has a library called `argparse`, we have decided
-to use it for argument management. All possible command arguments are stored
-inside `arguments` dict:
+We have decided to use `argparse` from the standard library for argument
+management. All possible command arguments are stored inside a dict
+`arguments`:
 
 ::
 
@@ -96,9 +96,9 @@ inside `arguments` dict:
         }
     }
 
-When command runs all values are passed to the `call` method inside `arguments`
-variable. This is the source code of `hello_user` command which prints "Hello"
-to the user specified via `--name` parameter:
+When the command runs all values are passed to the `call` method inside
+`arguments`. This is the source code of the `hello_user` command which prints
+"Hello" to the user specified via the parameter `--name`:
 
 ::
 
@@ -126,8 +126,8 @@ to the user specified via `--name` parameter:
 Command runner
 ^^^^^^^^^^^^^^
 
-To run the commands, we have a script called `scripts.py`. This scipts is using
-Python's `pkgutil` module to get a list of all possible commands from 
+To run the commands, we created script called `manage.py`. This scipts is using
+Python's `pkgutil` module to get a list of all possible commands from the
 `commands` module:
 
 ::
@@ -148,7 +148,7 @@ Python's `pkgutil` module to get a list of all possible commands from
             return self._command_list        
         ...
 
-As a next step, we have to form the list of possible script arguments. 
+As a next step, we have to form the list of possible script arguments. The
 `argparse` module provides nice mechanism called `subparsers`. We are creating 
 a subparser for every command to keep it's arguments in a separate scope:
 

@@ -30,10 +30,26 @@ This approach is nice, but when the number of command-line utilities grows,
 the user should either create a separate script runner for every command, or
 should deal with the long list of parameters used by different commands.
 
-To overcome this issues we have decided to create our own management command
-runner. The original idea of code structure was taken from the Django
-framework, their management commands are implemented nice way. We have decided
-to stick to the following module structure:
+To overcome this issues we have tried to find alternative solutions. A quick
+recap:
+
+* Using Django libraries for management commands by David Koblas
+  (http://geekscrap.com/2010/02/integrate-tornado-in-django/). The solution
+  itself is not bad, but bringing a new framework to the project makes
+  the project itself very complex. 
+
+* Stuart Marsh provided cleaner solution in his library `tornado-cli` 
+  (https://github.com/beardygeek/tornado-cli/). But we have found few issues
+  why we should not use it. First of all this library is not supported since
+  2011 and uses deprecated Python libraries like `optparse`. Second, all
+  commands should be declared in advance, which makes adding new commands
+  more complex. Third, we didn't like the way to declare command
+  arguments. 
+
+Finally, we have decided to create our own management command runner. The
+original idea of code structure was taken from the Django framework, their
+management commands are implemented nice way. We have agreed on the following
+module structure:
 
 ::
     
@@ -472,14 +488,6 @@ proper error handling if this parameter is missing:
 Sometimes commands can generate db records, files and other things to test, but
 we will not cover these topics in scope of this article.
 
-Third-party alternatives
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-* https://github.com/koblas/django-on-tornado/blob/master/myproject/django_tornado/management/commands/runtornado.py
-* http://geekscrap.com/2010/02/integrate-tornado-in-django/
-* http://tornado.readthedocs.org/en/latest/options.html
-* https://github.com/beardygeek/tornado-cli
-
 Conclusion
 ^^^^^^^^^^
 
@@ -487,3 +495,10 @@ This approach helped us to organize our growing collection of management
 commands for our Tornado project. As long as we tried to use system modules, 
 we've got a framework independent solution which can be used in any Python 
 2.7+ project. Have fun with management commands! 
+
+
+Links
+^^^^^
+* http://tornado.readthedocs.org/en/latest/options.html
+* http://geekscrap.com/2010/02/integrate-tornado-in-django/
+* https://github.com/beardygeek/tornado-cli

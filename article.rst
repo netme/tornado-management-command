@@ -42,7 +42,7 @@ the following module structure:
     |-command1.py
     |-command2.py
     |...
-    manage.py
+    scripts.py
 
 
 Each command is stored inside `commands` module. `commands` module also 
@@ -126,7 +126,7 @@ to the user specified via `--name` parameter:
 Command runner
 ^^^^^^^^^^^^^^
 
-To run the commands, we have a script called `manage.py`. This scipts is using
+To run the commands, we have a script called `scripts.py`. This scipts is using
 Python's `pkgutil` module to get a list of all possible commands from 
 `commands` module:
 
@@ -192,7 +192,7 @@ proper `Command` class and call it, sending the list of the arguments:
             command.call(args)
 
 
-Here is the `manage.py` source code:
+Here is the `scripts.py` source code:
 
 ::
 

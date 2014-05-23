@@ -33,6 +33,8 @@ class CommandRunner(object):
         parsers = {}
         for command, module in self.command_list.iteritems():
             try:
+                if not issubclass(module.Command, commands.BaseCommand):
+                    continue
                 description = module.Command.description
                 arguments = module.Command.arguments
             except AttributeError as e:

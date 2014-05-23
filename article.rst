@@ -472,6 +472,13 @@ proper error handling if this parameter is missing:
 Sometimes commands can generate db records, files and other things to test, but
 we will not cover these topics in scope of this article.
 
+Third-party alternatives
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+* https://github.com/koblas/django-on-tornado/blob/master/myproject/django_tornado/management/commands/runtornado.py
+* http://geekscrap.com/2010/02/integrate-tornado-in-django/
+* http://tornado.readthedocs.org/en/latest/options.html
+* https://github.com/beardygeek/tornado-cli
 
 Conclusion
 ^^^^^^^^^^

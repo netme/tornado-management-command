@@ -257,6 +257,222 @@ Here is the `manage.py` source code:
         command_runner.run()
 
 
+Testing
+^^^^^^^
+
+Management command testing is quite tricky topic. First of all, command runner
+itself should be tested. The main challenge here is that we cannot stick to the
+existing command list. It can be changed during the project will start to grow.
+We decided to use special command set. One command should have incorrect class 
+name, another one should be correct and the thirt one should introduce some 
+additional parameters. All commands for testing should be isolated in their
+own module called `tests.samle_commands` . 
+
+::
+
+    # tests/sample_commands/command_with_wrong_classname.py
+    from commands import BaseCommand
+
+
+    class WrongCommand(BaseCommand):
+
+        description = 'Help message for Wrong Command'
+        arguments = {
+            '--user_id': {
+                'type': int,
+                'help': 'User ID'
+            }
+        }
+
+        def call(self, args):
+            pass
+
+
+    # tests/sample_commands/correct_command.py
+    from commands import BaseCommand
+
+
+    class Command(BaseCommand):
+
+        description = 'Help message for Correct Command'
+        arguments = {
+            '--user_id': {
+                'type': int,
+                'help': 'User ID'
+            }
+        }
+
+        def call(self, args):
+            pass
+
+    # tests/sample_commands/command_with_few_parameters.py
+    from commands import BaseCommand
+
+
+    class Command(BaseCommand):
+
+        description = 'Help message for Command with Few Parameters'
+        arguments = {
+            '--user_id': {
+                'type': int,
+                'help': 'User ID'
+            },
+            '--password': {
+                'type': str,
+                'help': 'Password'
+            }
+        }
+
+        def call(self, args):
+            pass
+
+
+The main test strategy for the command runner is:
+
+* Test that all commands are appearing in the `command_list`
+* Test that only correct commands are displayed in command help
+* Test that each correct command has it's own parameter context
+
+Here is the source code of the test class:
+
+::
+
+    # tests/test_commands.py
+    import unittest
+    ...
+    from manage import CommandRunner
+    from tests import sample_commands
+
+
+    class CommandRunnerTest(unittest.TestCase):
+
+        def setUp(self):
+            self.runner = CommandRunner(sample_commands)
+
+        def test_command_list(self):
+            generated_list = self.runner.command_list
+            original_list = {
+                'command_with_few_parameters': (
+                    sample_commands.command_with_few_parameters),
+                'correct_command': sample_commands.correct_command,
+                'command_with_wrong_classname': (
+                    sample_commands.command_with_wrong_classname)
+            }
+
+            for name in original_list.keys():
+                self.assertEqual(original_list[name], generated_list[name])
+
+        def test_command_list_in_help_message(self):
+            parser = self.runner.argument_parser
+            message = parser.format_help()
+            self.assertIn('command_with_few_parameters', message)
+            self.assertIn('correct_command', message)
+            self.assertNotIn('command_with_wrong_classname', message)
+            self.assertIn('Help message for Command with Few Parameters', message)
+            self.assertIn('Help message for Correct Command', message)
+            self.assertNotIn('Help message for Wrong Command', message)
+
+        def test_awesome_command_parameters(self):
+            parser = self.runner.argument_parser
+            arguments = parser.parse_args(['command_with_few_parameters'])
+            self.assertEqual(arguments.which, 'command_with_few_parameters')
+            parameters = dir(arguments)
+            self.assertIn('user_id', parameters)
+            self.assertIn('password', parameters)
+
+        def test_correct_command_parameters(self):
+            parser = self.runner.argument_parser
+            arguments = parser.parse_args(['correct_command'])
+            self.assertEqual(arguments.which, 'correct_command')
+            parameters = dir(arguments)
+            self.assertIn('user_id', parameters)
+            self.assertNotIn('password', parameters)
+        ...
+
+
+To test real commands, we need to capture stdout and stderr. Let's create a 
+base class for real command tests:
+
+::
+
+    # tests/test_commands.py
+    import sys
+    import unittest
+
+    from StringIO import StringIO
+
+    import commands
+    from manage import CommandRunner
+    ...
+
+    class RealCommandTestBase(unittest.TestCase):
+
+        def setUp(self):
+            self.saved_stdout = sys.stdout
+            self.saved_stderr = sys.stderr
+            self.out = StringIO()
+            self.errors = StringIO()
+            sys.stdout = self.out
+            sys.stderr = self.errors
+
+            self.runner = CommandRunner(commands)
+            self.parser = self.runner.argument_parser
+
+        def tearDown(self):
+            sys.stdout = self.saved_stdout
+            sys.stderr = self.saved_stderr
+    ...
+
+
+All output from `stdout` and `stderr` will be captured into `out` and `errors`
+attributes of the test class. To test `hello_world` command we need to run the 
+command and check 'Hello world!' in the `stdout`:
+
+::
+
+    # tests/test_commands.py
+    ...
+
+    class HelloWorldCommandTest(RealCommandTestBase):
+
+        def test_command_output(self):
+            arguments = self.parser.parse_args(['hello_world'])
+            command = self.runner.command_list[arguments.which].Command()
+            command.call(arguments)
+            output = self.out.getvalue().strip()
+            self.assertEqual(output, 'Hello world!')
+    ...
+
+
+Testing `hello_user` is a bit more tricky. We need to check the correct 
+command behaviour when the `--name` parameter is set, and we also need to check
+proper error handling if this parameter is missing:
+
+
+::
+
+    # tests/test_commands.py
+    ...
+    class HelloUserCommandTest(RealCommandTestBase):
+
+        def test_command_output(self):
+            arguments = self.parser.parse_args(['hello_user', '--name=John'])
+            command = self.runner.command_list[arguments.which].Command()
+            command.call(arguments)
+            output = self.out.getvalue().strip()
+            self.assertEqual(output, 'Hello John!')
+
+        def test_name_parameter_required(self):
+            with self.assertRaises(SystemExit):
+                self.parser.parse_args(['hello_user'])
+            output = self.errors.getvalue().strip()
+            self.assertIn('--name is required', output)
+
+
+Sometimes commands can generate db records, files and other things to test, but
+we will not cover these topics in scope of this article.
+
+
 Conclusion
 ^^^^^^^^^^
 

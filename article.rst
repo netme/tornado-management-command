@@ -1,6 +1,9 @@
 Advanced management commands in Tornado
 =======================================
 
+.. contents:: 
+   :depth: 2
+
 Introduction
 ^^^^^^^^^^^^
 

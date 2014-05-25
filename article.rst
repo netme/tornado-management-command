@@ -1,6 +1,9 @@
 Advanced management commands in Tornado
 =======================================
 
+Introduction
+^^^^^^^^^^^^
+
 Tornado is a Python web framework and asynchronous networking library, 
 originally developed at FriendFeed. It is lean, flexibe and perfectly fits
 for small projects. By using non-blocking network I/O, Tornado can perfectly
@@ -8,10 +11,10 @@ serve a large amount of requests.
 
 Sometimes, then the project starts to grow, it becomes necessary to provide 
 utilities which are utilizing the existing project's libraries, but for some
-reasons should be started from the terminal or like a cron job. For this case
-Tornado provides a library called `tornado.options`. This library helps to
-provide additional configuration parameters for the projects via configuration
-file or via command line arguments. 
+reasons should be started from the terminal or like a cron job. Tornado 
+provides a library called `tornado.options` which helps to provide additional 
+configuration parameters for the projects via settings file or via command line
+arguments. 
 
 ::
 
@@ -27,24 +30,27 @@ file or via command line arguments.
         ...
 
 This approach is nice, but when the number of command-line utilities grows,
-the user should either create a separate script runner for every command, or
-should deal with the long list of parameters used by different commands.
+the user should either create a separate script for every command, or should 
+deal with the long list of parameters used by different commands. 
+Unfortunately, it was not optimal for us. 
 
-To overcome this issues we have tried to find alternative solutions. A quick
-recap:
+First, we have looked on existing solutions. A quick recap:
 
 * Using Django libraries for management commands by David Koblas
   (http://geekscrap.com/2010/02/integrate-tornado-in-django/). The solution
-  itself is not bad, but bringing a new framework to the project makes
-  the project itself very complex. 
+  itself is not bad, but we decided not to add one more web framework to our 
+  requirement list. 
 
-* Stuart Marsh provided cleaner solution in his library `tornado-cli` 
+* Stuart Marsh provided a bit cleaner solution in his library `tornado-cli` 
   (https://github.com/beardygeek/tornado-cli/). But we have found few issues
   why we should not use it. First of all this library is not supported since
-  2011 and uses deprecated Python libraries like `optparse`. Second, all
+  2011. Second, it uses deprecated Python libraries like `optparse`. Third, all
   commands should be declared in advance, which makes adding new commands
-  more complex. Third, we didn't like the way to declare command
-  arguments. 
+  more complex. Third, we didn't like the way to declare command arguments. 
+
+
+Our solution
+^^^^^^^^^^^^
 
 Finally, we have decided to create our own management command runner. The
 original idea of code structure was taken from the Django framework, their
@@ -78,9 +84,8 @@ contains the base class for each command - `BaseCommand`:
 
 
 Each command should be inherited from the class `BaseCommand` and override at
-least the `call` method. To help the user understand what the command is doing,
-it should be a good practice to fill the `description` attribute with some
-general information. Let's look on the code of a `hello_world` command:
+least the `call` method. The `description` attribute should store the in-line 
+help. Let's look on the code of a simple `hello_world` command:
 
 ::
     
@@ -112,9 +117,9 @@ management. All possible command arguments are stored inside a dict
         }
     }
 
-When the command runs all values are passed to the `call` method inside
-`arguments`. This is the source code of the `hello_user` command which prints
-"Hello" to the user specified via the parameter `--name`:
+When the command runs all argument values are passed to the `call` method. This
+is the source code of the `hello_user` command which prints "Hello" to the user
+specified via the parameter `--name`:
 
 ::
 
@@ -143,8 +148,8 @@ Command runner
 ^^^^^^^^^^^^^^
 
 To run the commands, we created script called `manage.py`. This scipts is using
-Python's `pkgutil` module to get a list of all possible commands from the
-`commands` module:
+Python's `pkgutil` standard module to get a list of all possible commands from
+the `commands` module:
 
 ::
 
@@ -165,8 +170,9 @@ Python's `pkgutil` module to get a list of all possible commands from the
         ...
 
 As a next step, we have to form the list of possible script arguments. The
-`argparse` module provides nice mechanism called `subparsers`. We are creating 
-a subparser for every command to keep it's arguments in a separate scope:
+`argparse` module provides nice mechanism called `subparsers`. We decided to
+create a subparser for every command to keep it's arguments in a separate
+scope:
 
 ::
 
@@ -180,6 +186,8 @@ a subparser for every command to keep it's arguments in a separate scope:
             parsers = {}
             for command, module in self.command_list.iteritems():
                 try:
+                    if not issubclass(module.Command, commands.BaseCommand):
+                        continue
                     description = module.Command.description
                     arguments = module.Command.arguments
                 except AttributeError as e:
@@ -249,6 +257,8 @@ Here is the `scripts.py` source code:
             parsers = {}
             for command, module in self.command_list.iteritems():
                 try:
+                    if not issubclass(module.Command, commands.BaseCommand):
+                        continue
                     description = module.Command.description
                     arguments = module.Command.arguments
                 except AttributeError as e:
@@ -277,12 +287,13 @@ Testing
 ^^^^^^^
 
 Management command testing is quite tricky topic. First of all, command runner
-itself should be tested. The main challenge here is that we cannot stick to the
-existing command list. It can be changed during the project will start to grow.
-We decided to use special command set. One command should have incorrect class 
-name, another one should be correct and the thirt one should introduce some 
-additional parameters. All commands for testing should be isolated in their
-own module called `tests.samle_commands` . 
+itself should be tested. The main challenge here in testing is that we cannot
+stick to the existing command list. In the beginning project can have zero 
+commands, but we have to be sure that command runner is working. We decided to
+use special command set. One command should have incorrect class  name, another
+one should be correct and the third one should introduce some additional 
+parameters. All commands for testing should be isolated in their own module
+called `tests.sample_commands` . 
 
 ::
 
@@ -346,10 +357,10 @@ own module called `tests.samle_commands` .
 The main test strategy for the command runner is:
 
 * Test that all commands are appearing in the `command_list`
-* Test that only correct commands are displayed in command help
-* Test that each correct command has it's own parameter context
+* Test that only correct commands are displayed in command help message
+* Test that each correct command has its own parameter context
 
-Here is the source code of the test class:
+Here is the source code of the command runner test class:
 
 ::
 
@@ -406,7 +417,7 @@ Here is the source code of the test class:
         ...
 
 
-To test real commands, we need to capture stdout and stderr. Let's create a 
+To test real commands, we need to capture `stdout` and `stderr`. Let's create a 
 base class for real command tests:
 
 ::
@@ -485,16 +496,18 @@ proper error handling if this parameter is missing:
             self.assertIn('--name is required', output)
 
 
-Sometimes commands can generate db records, files and other things to test, but
-we will not cover these topics in scope of this article.
+Sometimes commands can generate db records, files and other data, but we will
+not cover these topics in scope of this article.
 
 Conclusion
 ^^^^^^^^^^
 
 This approach helped us to organize our growing collection of management 
-commands for our Tornado project. As long as we tried to use system modules, 
-we've got a framework independent solution which can be used in any Python 
-2.7+ project. Have fun with management commands! 
+commands for our Tornado-based project. As long as we tried to use system
+modules, we've got a framework independent solution which can be used in any
+Python 2.7+ project. 
+
+Have fun with management commands! 
 
 
 Links
